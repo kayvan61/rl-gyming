@@ -22,6 +22,13 @@ class CliffWalker:
         a = action
         self.tab[s][a] += self.lr * (reward + self.gamma*(max(self.tab[next_state]) - self.tab[s][a]))
 
+    def reward_SARSA(self, old_state, action, reward, next_state):
+        # sarsa will grab best from policy action
+        s = old_state
+        a = action
+        next_action = self.get_action(next_state)
+        self.tab[s][a] += self.lr * (reward + self.gamma*self.tab[next_state][next_action] - self.tab[s][a])
+
     def reward_TD(self, old_state, action, reward, next_state):
         s = old_state
         a = action
@@ -30,7 +37,7 @@ class CliffWalker:
         self.tab[s][a] += 1/(self.n_tab[old_state]) * (reward + self.gamma*next_state_value - self.tab[s][a])
 
 def runner(train_steps, eval_steps):
-    env = gym.make("CliffWalking-v0", is_slippery=True)
+    env = gym.make("CliffWalking-v0", is_slippery=False)#, render_mode="human")
     cw = CliffWalker(4, 48, .8, .6)
     
     observation, info = env.reset(seed=42)
@@ -43,9 +50,11 @@ def runner(train_steps, eval_steps):
     
         if terminated or truncated:
             observation, info = env.reset()
-        cw.reward_TD(observation, action, reward, new_observation)
+        cw.reward_SARSA(observation, action, reward, new_observation)
         observation = new_observation
         action = cw.get_action(observation)
+
+    print("\n".join([str(i) + ": " + str(x) for i, x in enumerate(cw.tab)]))
 
     # eval the training done in the last step
     env.reset()
@@ -74,7 +83,7 @@ def runner(train_steps, eval_steps):
     else:
         print("never won!")
 
-steps = [10**i for i in range(10)][4:]
+steps = [10**i for i in range(10)][4:5]
 for x in steps:
     runner(x,10000)
     
